@@ -1,0 +1,67 @@
+---
+title: "Group Project - Nont"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+df <- read.csv("database.csv", header = TRUE)
+
+
+
+names_to_drop <- c( 'Record.ID', 'Agency.Name', 'Record.Source', 
+                    'Perpetrator.Ethnicity') # Dropping the variables from our analysis
+
+
+#Our main dataset:
+murder.num <- df %>%
+  filter(Crime.Type == "Murder or Manslaughter") %>%
+  select(-one_of(names_to_drop)) %>%
+  filter(Victim.Age > 0 & Victim.Age < 99) %>%
+  filter(!(Perpetrator.Race == 'Unknown' & Crime.Solved == 'Yes')) %>%
+  mutate(Victim.Counts = Victim.Count + 1, Perpetrator.Counts = Perpetrator.Count +1) %>%
+  select(-one_of('Victim.Count', 'Perpetrator.Count'))
+
+
+#Summarizing each city and the number of crimes in it:
+most_crime_cities <- 
+  group_by(murder.num, City) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+
+#This will print cities with the maximum number of crimes. We will look at the first 5:
+head(most_crime_cities)
+
+# This will give us an additional column which will have proportion of crimes solved in that city
+prop_crimes_solved <- 
+  group_by(murder.num, City) %>% 
+  mutate(TotalCrimes = n()) %>%
+  ungroup() %>%
+  filter(Crime.Solved == "Yes") %>%
+  group_by(City) %>%
+  mutate(Prop.Crimes.Solved= (n()/TotalCrimes)) %>% 
+  arrange(TotalCrimes)
+# However this dataset isnt the total dataset since Crime Solved = No has been filtered out
+
+
+max_crime_cities <- c('New York', 'Los Angeles','Cook','Harris', 'Wayne')
+
+
+#Creating a table of our cities with proportion of crime solved and total crimes:
+prop.table <- select(prop_crimes_solved, City, TotalCrimes,Prop.Crimes.Solved ) %>%
+  filter(City %in% max_crime_cities) %>%
+  group_by(City, TotalCrimes, Prop.Crimes.Solved) %>%
+  summarise() 
+
+prop.table
+```
+
+Individual Analysis
+```{r}
+# Preparing data for your individual city-wise analysis:
+cook <- filter(murder.num, City == "Cook") #You can filter your individual city. For eg, City == "Cook"
+```
